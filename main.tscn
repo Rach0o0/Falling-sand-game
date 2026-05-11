@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://disn8pj4f45b4"]
+
+[ext_resource type="Script" uid="uid://d2jmyndve4hqw" path="res://sum.gd" id="1_ig7tw"]
+[ext_resource type="Script" uid="uid://ddghl3wb8l7pk" path="res://variance.gd" id="2_0xm2m"]
+
+[node name="Main" type="Node" unique_id=1172159680]
+
+[node name="Node2D" type="Node2D" parent="." unique_id=20709325]
+
+[node name="Sum" type="Node" parent="." unique_id=944654974]
+script = ExtResource("1_ig7tw")
+
+[node name="Variance" type="Node" parent="." unique_id=46613826]
+script = ExtResource("2_0xm2m")

@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://bk7hq1yiv8wkl"
+path="res://.godot/imported/variance.glsl-29f0e3fbda95fb17fd15ec968ae998d5.res"
+
+[deps]
+
+source_file="res://variance.glsl"
+dest_files=["res://.godot/imported/variance.glsl-29f0e3fbda95fb17fd15ec968ae998d5.res"]
+
+[params]
+
