@@ -1,6 +1,9 @@
 #pragma once
 
 #include <godot_cpp/core/class_db.hpp>
+/*
+contains functions such that GDREGISTER_CLASS() or ModuleInitializationLevel
+*/
 
 using namespace godot;
 

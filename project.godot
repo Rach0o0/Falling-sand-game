@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="CSE305 TD3"
+config/name="Falling Sand Game"
 run/main_scene="uid://disn8pj4f45b4"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
