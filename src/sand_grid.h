@@ -10,31 +10,40 @@
 
 namespace godot {
 
-/*
-MAIN CLASS : SandGrid 
-It is a sprite2D
-*/
 class SandGrid : public Sprite2D {
   GDCLASS(SandGrid, Sprite2D) //this class is named SandGrid, heritates from Sprite2D
 
 public:
-  //types of cells
+  /* ---------------------------------------------------------
+  CELL TYPES
+  ---------------------------------------------------------- */
   enum Cell : uint8_t {
     EMPTY = 0,
     SAND = 1,
     //wall, water, ...
   };
 
+  /* ---------------------------------------------------------
+  CONSTRUCTOR / DESTRUCTOR
+  ---------------------------------------------------------- */
   SandGrid();
   ~SandGrid() override = default;
 
-  //GODOT functions : 
+  /* ---------------------------------------------------------
+  GODOT FUNCTIONS
+  ---------------------------------------------------------- */
   void _ready() override; //called when node is ready in the scene
   void _process(double delta) override; //called each frame
 
-  void step(); //one step of the simulation
-
-  //SETTINGS
+  /* ---------------------------------------------------------
+  SIMULATION FUNCTIONS
+  ---------------------------------------------------------- */
+  bool step(); //one step of the simulation, returns true if at least one sand particle moved
+  void run_until_stable(); //run simulation until no particle moves + print time
+  
+  /* ---------------------------------------------------------
+  SETTINGS
+  ---------------------------------------------------------- */
   void set_grid_width(int p_w);
   int get_grid_width() const { return width; }
   void set_grid_height(int p_h);
@@ -48,6 +57,10 @@ private:
   int height = 256;
 
   std::vector<uint8_t> cells; //1D list
+
+  /* ---------------------------------------------------------
+  RENDERING
+  ---------------------------------------------------------- */
   PackedByteArray pixel_buffer;
   Ref<Image> image;
   Ref<ImageTexture> texture;
@@ -56,12 +69,29 @@ private:
   cells -> pixel_buffer -> image -> texture -> Sprite2D showd texture
   */
 
-  void resize_grid();
-  void randomize();
   void upload_to_texture();
 
-  //convert 2D coords in 1D
+  /* ---------------------------------------------------------
+  GRID SETUP
+  ---------------------------------------------------------- */
+  void resize_grid();
+  void randomize();
+
+  /* ---------------------------------------------------------
+  SIMULATION RULES
+  ---------------------------------------------------------- */
+  bool apply_sand_rules(int x, int y);
+  bool try_move(int from_x, int from_y, int to_x, int to_y);
+
+  /* ---------------------------------------------------------
+  UTILS
+  ---------------------------------------------------------- */
+
+  //convert coords 2D -> 1D
   inline int idx(int x, int y) const { return y * width + x; }
+
+  //check if coords are in the grid
+  inline bool in_grid(int x, int y) const { return x >= 0 && x < width && y >= 0 && y < height;}
 };
 
 }

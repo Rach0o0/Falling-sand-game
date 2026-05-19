@@ -5,6 +5,8 @@ by Ayoub Agouzoul &amp; Rachid Tazi
 
 scons platform=linux target=template_debug -j$(nproc)
 
+To run directly the game : godot4 .
+To open the editor : godot4 --editor
 
 ## Understand Godot structure
 

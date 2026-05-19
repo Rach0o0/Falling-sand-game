@@ -6,12 +6,18 @@
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/vector2.hpp>
 
-
+#include <chrono>
+#include <iostream>
 #include <random>
+
 
 using namespace godot;
 
 SandGrid::SandGrid() {}
+
+/* ---------------------------------------------------------
+  SETTINGS
+---------------------------------------------------------- */
 
 void SandGrid::_bind_methods() {
   ClassDB::bind_method(D_METHOD("step"), &SandGrid::step);
@@ -35,6 +41,10 @@ void SandGrid::set_grid_height(int p_h) {
   resize_grid();
 }
 
+/* ---------------------------------------------------------
+  GRID SETUP
+---------------------------------------------------------- */
+
 void SandGrid::resize_grid() {
   //creates a grid of size width*height with empty cells
   cells.assign(static_cast<size_t>(width) * height, EMPTY);
@@ -54,6 +64,10 @@ void SandGrid::randomize() {
     c = pileouface(rng) ? SAND : EMPTY;
 }
 
+/* ---------------------------------------------------------
+  GODOT FUNCTIONS
+---------------------------------------------------------- */
+
 void SandGrid::_ready() {
   if (Engine::get_singleton()->is_editor_hint()) {
     return;
@@ -71,6 +85,7 @@ void SandGrid::_ready() {
 
 //each frame
 void SandGrid::_process(double delta) {
+  //we still don't use delta
   (void)delta;
 
   if (Engine::get_singleton()->is_editor_hint()) {
@@ -81,17 +96,116 @@ void SandGrid::_process(double delta) {
   upload_to_texture();
 }
 
-// first test
-void SandGrid::step() {
+/* ---------------------------------------------------------
+  SIMULATION RULES
+---------------------------------------------------------- */
+
+//rules for sand
+bool SandGrid::apply_sand_rules(int x, int y){
+  if (cells[idx(x,y)] != SAND){
+    return false;
+  }
+
+  //try move down
+  if (try_move(x,y,x,y+1)){
+    return true;
+  }
+
+  //see where sand can fall
+  bool can_fall_left = in_grid(x-1, y+1) && cells[idx(x-1, y+1)] == EMPTY;
+  bool can_fall_right = in_grid(x+1, y+1) && cells[idx(x+1, y+1)] == EMPTY;
+
+  //if both are possible -> random
+  if (can_fall_left && can_fall_right) {
+    std::mt19937 rng(0);
+    std::bernoulli_distribution coin_flip(0.5);
+    
+    if (coin_flip(rng)){
+      return try_move(x, y,x-1, y+1);
+    } else {
+      return try_move(x, y, x+1 , y+1);
+    }
+  }
+
+  //left
+  if (can_fall_left) {
+    return try_move(x, y, x - 1, y + 1);
+  }
+
+  //right 
+  if (can_fall_right) {
+    return try_move(x, y, x + 1, y + 1);
+  }
+
+  return false;
+}
+
+//try to move sand
+bool SandGrid::try_move(int from_x, int from_y, int to_x, int to_y){
+  if (!in_grid(to_x, to_y)){
+    return false;
+  }
+
+  int from = idx(from_x, from_y);
+  int to = idx(to_x, to_y);
+
+  if (cells[to] != EMPTY){
+    return false;
+  }
+
+  cells[from] = EMPTY;
+  cells[to] = SAND;
+
+  return true;
+}
+
+/* ---------------------------------------------------------
+  SIMULATION FUNCTIONS
+---------------------------------------------------------- */
+
+//one step of the simulation
+bool SandGrid::step() {
+  //sand has moved ?
+  bool moved = false;
+
   for (int y = height - 2; y >= 0; --y) {
     for (int x = 0; x < width; ++x) {
-      if (cells[idx(x, y)] == SAND && cells[idx(x, y + 1)] == EMPTY) {
-        cells[idx(x, y)] = EMPTY;
-        cells[idx(x, y + 1)] = SAND;
+      if (apply_sand_rules(x,y)) {
+        moved = true;
       }
     }
   }
+
+  return moved;
 }
+
+//time the process
+void SandGrid::run_until_stable(){
+  using clock = std::chrono::high_resolution_clock;
+  auto start = clock::now();
+
+  int steps = 0;
+
+  while (true) {
+    bool moved = step();
+    steps++;
+
+    if(!moved){
+      break;
+    }
+  }
+  auto end = clock::now();
+
+  double time = std::chrono::duration<double, std::milli>(end - start).count();
+
+  std::cout << "Simulation ended after" << steps << "steps in" << time << "ms." << std::endl;
+  
+  upload_to_texture();
+}
+
+/* ---------------------------------------------------------
+  RENDERING
+---------------------------------------------------------- */
 
 void SandGrid::upload_to_texture() {
   uint8_t *dst = pixel_buffer.ptrw();
