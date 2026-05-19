@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <chrono>
 
 namespace godot {
 
@@ -70,6 +71,16 @@ private:
   */
 
   void upload_to_texture();
+
+  /* ---------------------------------------------------------
+  TIMER
+  ---------------------------------------------------------- */
+  bool timing_enabled = false;
+  bool simulation_finished = false;
+
+  std::chrono::high_resolution_clock::time_point simulation_start_time;
+
+  int simulation_steps = 0;
 
   /* ---------------------------------------------------------
   GRID SETUP

@@ -82,7 +82,10 @@ void SandGrid::_ready() {
   randomize();
   upload_to_texture();
 
-  run_until_stable();
+  timing_enabled = true;
+  simulation_finished = false;
+  simulation_steps = 0;
+  simulation_start_time = std::chrono::high_resolution_clock::now();
 }
 
 //each frame
@@ -94,8 +97,21 @@ void SandGrid::_process(double delta) {
     return;
   }
 
-  step();
+  if (simulation_finished) return;
+
+  bool moved = step();
+  simulation_steps++;
+
   upload_to_texture();
+
+  if (!moved){
+    auto end_time = std::chrono::high_resolution_clock::now();
+
+    double time = std::chrono::duration<double, std::milli>(end_time - simulation_start_time).count();
+    std::cout << "Simulation ended after " << simulation_steps << " steps in " << time << " ms." << std::endl;
+
+    simulation_finished = true;
+  }
 }
 
 /* ---------------------------------------------------------
@@ -181,7 +197,7 @@ bool SandGrid::step() {
   return moved;
 }
 
-//time the process
+//benchmark
 void SandGrid::run_until_stable(){
   using clock = std::chrono::high_resolution_clock;
   auto start = clock::now();
