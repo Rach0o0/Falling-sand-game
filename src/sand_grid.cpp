@@ -81,6 +81,8 @@ void SandGrid::_ready() {
 
   randomize();
   upload_to_texture();
+
+  run_until_stable();
 }
 
 //each frame
@@ -198,7 +200,7 @@ void SandGrid::run_until_stable(){
 
   double time = std::chrono::duration<double, std::milli>(end - start).count();
 
-  std::cout << "Simulation ended after" << steps << "steps in" << time << "ms." << std::endl;
+  std::cout << "Simulation ended after " << steps << " steps in " << time << " ms." << std::endl;
   
   upload_to_texture();
 }
