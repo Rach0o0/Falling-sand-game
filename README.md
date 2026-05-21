@@ -2,10 +2,18 @@
 by Ayoub Agouzoul &amp; Rachid Tazi
 
 ## Compilation
+All commands should be run from project root.
 
-scons platform=linux target=template_debug -j$(nproc)
+
+```bash
+# one-liner
+scons platform=linux target=template_debug -j$(nproc) && godot . &
+```
+
+To compile: scons platform=linux target=template_debug -j$(nproc)
 
 To run directly the game : godot4 .
+
 To open the editor : godot4 --editor
 
 ## Understand Godot structure

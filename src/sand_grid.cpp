@@ -4,10 +4,10 @@
 #include <godot_cpp/classes/image_texture.hpp>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/vector2.hpp>
 
 #include <chrono>
-#include <iostream>
 #include <random>
 
 
@@ -105,10 +105,11 @@ void SandGrid::_process(double delta) {
   upload_to_texture();
 
   if (!moved){
+    
     auto end_time = std::chrono::high_resolution_clock::now();
-
     double time = std::chrono::duration<double, std::milli>(end_time - simulation_start_time).count();
-    std::cout << "Simulation ended after " << simulation_steps << " steps in " << time << " ms." << std::endl;
+
+    UtilityFunctions::print("Simulation ended after ", simulation_steps, " steps in ", time, " ms.");
 
     simulation_finished = true;
   }
@@ -120,7 +121,7 @@ void SandGrid::_process(double delta) {
 
 //rules for sand
 bool SandGrid::apply_sand_rules(int x, int y){
-  if (cells[idx(x,y)] != SAND){
+  if (cells[idx(x,y)] == EMPTY){
     return false;
   }
 
@@ -216,8 +217,8 @@ void SandGrid::run_until_stable(){
 
   double time = std::chrono::duration<double, std::milli>(end - start).count();
 
-  std::cout << "Simulation ended after " << steps << " steps in " << time << " ms." << std::endl;
-  
+  UtilityFunctions::print("Simulation ended after ", steps, " steps in ", time, " ms.");
+
   upload_to_texture();
 }
 

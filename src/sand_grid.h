@@ -55,7 +55,7 @@ protected:
 
 private:
   int width = 256;
-  int height = 256;
+  int height = 128;
 
   std::vector<uint8_t> cells; //1D list
 
@@ -99,6 +99,7 @@ private:
   ---------------------------------------------------------- */
 
   //convert coords 2D -> 1D
+  //TODO: consider concurrent data structures, think of cache and array locality
   inline int idx(int x, int y) const { return y * width + x; }
 
   //check if coords are in the grid
