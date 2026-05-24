@@ -2,8 +2,8 @@
 by Ayoub Agouzoul &amp; Rachid Tazi
 
 ## Compilation
-All commands should be run from project root.
 
+All commands should be run from project root.
 
 ```bash
 # one-liner
@@ -13,7 +13,6 @@ scons platform=linux target=template_debug -j$(nproc) && godot . &
 To compile: scons platform=linux target=template_debug -j$(nproc)
 
 To run directly the game : godot4 .
-
 To open the editor : godot4 --editor
 
 ## Understand Godot structure
@@ -48,3 +47,14 @@ script GDScript
 - .glsl
 shader glsl
 compute shader 
+
+## GPU usage
+
+texture A = actual grid
+texture B = next grid
+
+GPU reads texture A and writes on texture B 
+Then, we exchange (texture B becomes actual grid)
+
+So we do : input_grid -> shader GPU -> output grid
+

@@ -4,6 +4,19 @@
 #include <godot_cpp/classes/image_texture.hpp>
 #include <godot_cpp/classes/sprite2d.hpp>
 #include <godot_cpp/variant/packed_byte_array.hpp>
+#include <godot_cpp/variant/packed_float32_array.hpp>
+#include <godot_cpp/variant/array.hpp>
+
+//includes for RenderingDevice
+#include <godot_cpp/classes/rendering_device.hpp>
+#include <godot_cpp/classes/rendering_server.hpp>
+#include <godot_cpp/classes/rd_texture_format.hpp>
+#include <godot_cpp/classes/rd_texture_view.hpp>
+#include <godot_cpp/classes/rd_uniform.hpp>
+#include <godot_cpp/classes/rd_shader_source.hpp>
+#include <godot_cpp/classes/rd_shader_spirv.hpp>
+#include <godot_cpp/classes/texture2drd.hpp>
+#include <godot_cpp/classes/file_access.hpp>
 
 #include <cstdint>
 #include <vector>
@@ -55,13 +68,12 @@ protected:
 
 private:
   int width = 256;
-  int height = 128;
-
-  std::vector<uint8_t> cells; //1D list
+  int height = 256;
 
   /* ---------------------------------------------------------
-  RENDERING
+  CPU 
   ---------------------------------------------------------- */
+  std::vector<uint8_t> cells; //1D list
   PackedByteArray pixel_buffer;
   Ref<Image> image;
   Ref<ImageTexture> texture;
@@ -71,6 +83,42 @@ private:
   */
 
   void upload_to_texture();
+
+
+  /* ---------------------------------------------------------
+  GPU 
+  ---------------------------------------------------------- */
+  //RenderingDevice = Godot object that allows us to speak to GPU
+  RenderingDevice *rd = nullptr;
+
+  RID shader;
+  RID pipeline;
+
+  RID gpu_textures[2]; //0 -> actual grid; 1 -> next grid
+  RID uniform_sets[2];
+  int current_texture_index = 0;
+
+  bool gpu_enabled = true;
+
+  //slow down simulation
+  int frame_counter = 0;
+  int frames_per_update = 1;
+
+  //empty gpu texture creation
+  RID create_gpu_texture();
+  //initialize
+  void initialize_gpu_texture(RID texture_rid);
+  //load and compile shader glsl
+  bool create_compute_pipeline();
+  //create uniform set
+  RID create_uniform_set(RID input_texture, RID output_texture);
+  //one step
+  void run_gpu_step();
+  //update display
+  void update_display_texture();
+  //setup GPU 
+  bool setup_gpu();
+
 
   /* ---------------------------------------------------------
   TIMER

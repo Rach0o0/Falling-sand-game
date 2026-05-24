@@ -8,6 +8,7 @@
 #include <godot_cpp/variant/vector2.hpp>
 
 #include <chrono>
+#include <iostream>
 #include <random>
 
 
@@ -59,7 +60,7 @@ void SandGrid::resize_grid() {
 void SandGrid::randomize() {
   //fill the grid randomly with sand
   std::mt19937 rng(0);
-  std::bernoulli_distribution pileouface(0.5);
+  std::bernoulli_distribution pileouface(0.10);
   for (auto &c : cells)
     c = pileouface(rng) ? SAND : EMPTY;
 }
@@ -73,19 +74,37 @@ void SandGrid::_ready() {
     return;
   }
 
+  //create CPU grid
   resize_grid();
 
-  set_centered(false);
-  set_position(Vector2(0, 0));
-  set_scale(Vector2(3, 3));
-
+  //set up the grid
   randomize();
-  upload_to_texture();
+  set_scale(Vector2(3.0, 3.0));
 
   timing_enabled = true;
   simulation_finished = false;
   simulation_steps = 0;
   simulation_start_time = std::chrono::high_resolution_clock::now();
+
+  //GPU 
+  if (gpu_enabled){
+    if (!setup_gpu()){
+      //gpu doesn't work
+      gpu_enabled = false;
+      //cpu method
+      upload_to_texture();
+      return;
+    }
+
+    //initial GPU texture 
+    update_display_texture();
+
+    return;
+  }
+
+  upload_to_texture();
+
+  
 }
 
 //each frame
@@ -99,16 +118,23 @@ void SandGrid::_process(double delta) {
 
   if (simulation_finished) return;
 
+  //GPU 
+  if (gpu_enabled){
+    run_gpu_step();
+    simulation_steps++;
+    return;
+  }
+
+  //CPU
   bool moved = step();
   simulation_steps++;
 
   upload_to_texture();
 
   if (!moved){
-    
     auto end_time = std::chrono::high_resolution_clock::now();
-    double time = std::chrono::duration<double, std::milli>(end_time - simulation_start_time).count();
 
+    double time = std::chrono::duration<double, std::milli>(end_time - simulation_start_time).count();
     UtilityFunctions::print("Simulation ended after ", simulation_steps, " steps in ", time, " ms.");
 
     simulation_finished = true;
@@ -121,7 +147,7 @@ void SandGrid::_process(double delta) {
 
 //rules for sand
 bool SandGrid::apply_sand_rules(int x, int y){
-  if (cells[idx(x,y)] == EMPTY){
+  if (cells[idx(x,y)] != SAND){
     return false;
   }
 
@@ -218,7 +244,7 @@ void SandGrid::run_until_stable(){
   double time = std::chrono::duration<double, std::milli>(end - start).count();
 
   UtilityFunctions::print("Simulation ended after ", steps, " steps in ", time, " ms.");
-
+  
   upload_to_texture();
 }
 
@@ -237,4 +263,225 @@ void SandGrid::upload_to_texture() {
   }
   image->set_data(width, height, false, Image::FORMAT_RGBA8, pixel_buffer);
   texture->update(image);
+}
+
+/* ---------------------------------------------------------
+  GPU
+---------------------------------------------------------- */
+
+bool SandGrid::setup_gpu(){
+  /*
+  receive GPU, create 2 GPU grids, copy initial sand, load shader, prepare links input/output
+  */
+  
+  rd = RenderingServer::get_singleton()->get_rendering_device();
+
+  if (rd == nullptr){
+    return false;
+  }
+
+  //create 2 textures 
+  gpu_textures[0] = create_gpu_texture();
+  gpu_textures[1] = create_gpu_texture();
+
+  if (!gpu_textures[0].is_valid() || !gpu_textures[1].is_valid()){
+    return false;
+  }
+
+  //initialize textures with actual grid
+  initialize_gpu_texture(gpu_textures[0]);
+  initialize_gpu_texture(gpu_textures[1]);
+
+  //load and compile shader glsl
+  if (!create_compute_pipeline()){
+    return false;
+  }
+
+  //uniform sets
+  uniform_sets[0] = create_uniform_set(gpu_textures[0], gpu_textures[1]);
+  uniform_sets[1] = create_uniform_set(gpu_textures[1], gpu_textures[0]);
+
+  if (!uniform_sets[0].is_valid() || !uniform_sets[1].is_valid()) {
+    return false;
+  }
+
+  return true;
+}
+
+RID SandGrid::create_gpu_texture(){
+  /*
+  create a GPU image of size width x height usable by the shader
+  */
+
+  Ref<RDTextureFormat> format;
+  format.instantiate();
+
+  format->set_width(width);
+  format->set_height(height);
+
+  format->set_format(RenderingDevice::DATA_FORMAT_R32G32B32A32_SFLOAT);
+
+  format->set_usage_bits(
+    RenderingDevice::TEXTURE_USAGE_STORAGE_BIT |
+    RenderingDevice::TEXTURE_USAGE_CAN_UPDATE_BIT |
+    RenderingDevice::TEXTURE_USAGE_SAMPLING_BIT |
+    RenderingDevice::TEXTURE_USAGE_CAN_COPY_FROM_BIT
+  );
+
+  Ref<RDTextureView> view;
+  view.instantiate();
+
+  return rd->texture_create(format, view);
+}
+
+void SandGrid::initialize_gpu_texture(RID texture_rid){
+  PackedFloat32Array data;
+  data.resize(width*height*4);
+
+  for (int y = 0; y < height; y++){
+    for (int x = 0; x < width; x ++){
+      int cell_index = idx(x,y);
+      int pixel_index = cell_index * 4;
+
+      uint8_t cell = cells[cell_index];
+
+      if (cell == SAND){
+        data[pixel_index + 0] = 1.0f;   // R
+        data[pixel_index + 1] = 0.85f;  // G
+        data[pixel_index + 2] = 0.15f;  // B
+        data[pixel_index + 3] = 1.0f;   // A
+      } else {
+        data[pixel_index + 0] = 0.0f;   // R
+        data[pixel_index + 1] = 0.0f;   // G
+        data[pixel_index + 2] = 0.0f;   // B
+        data[pixel_index + 3] = 1.0f;   // A
+      }
+    }
+  }
+
+  //CPU -> GPU
+  PackedByteArray bytes = data.to_byte_array();
+  rd->texture_update(texture_rid, 0, bytes);
+}
+
+bool SandGrid::create_compute_pipeline(){
+  String shader_path = "res://sand_compute.glsl";
+
+  if (!FileAccess::file_exists(shader_path)){
+    return false;
+  }
+
+  //open glsl file
+  Ref<FileAccess> file = FileAccess::open(shader_path, FileAccess::READ);
+
+  if (file.is_null()){
+    return false;
+  }
+
+  //reads glsl code 
+  String shader_code = file->get_as_text();
+
+  //create Godot shader source
+  Ref<RDShaderSource> shader_source;
+  shader_source.instantiate();
+  
+  //set language
+  shader_source->set_language(RenderingDevice::SHADER_LANGUAGE_GLSL);
+  //compute shader
+  shader_source->set_stage_source(RenderingDevice::SHADER_STAGE_COMPUTE, shader_code);
+
+  //compile glsl
+  Ref<RDShaderSPIRV> shader_spirv = rd->shader_compile_spirv_from_source(shader_source);
+
+  if(shader_spirv->get_stage_compile_error(RenderingDevice::SHADER_STAGE_COMPUTE) != ""){
+    return false;
+  }
+
+  //shader GPU
+  shader = rd->shader_create_from_spirv(shader_spirv);
+  if (!shader.is_valid()){
+    return false;
+  }
+
+  //pipeline
+  pipeline = rd->compute_pipeline_create(shader);
+  if (!pipeline.is_valid()){
+    return false;
+  }
+
+  return true;
+}
+
+RID SandGrid::create_uniform_set(RID input_texture, RID output_texture){
+  
+  //input texture
+  Ref<RDUniform> input_uniform;
+  input_uniform.instantiate();
+
+  input_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_IMAGE);
+  input_uniform->set_binding(0);
+  input_uniform->add_id(input_texture);
+
+  //output texture
+  Ref<RDUniform> output_uniform;
+  output_uniform.instantiate();
+
+  output_uniform->set_uniform_type(RenderingDevice::UNIFORM_TYPE_IMAGE);
+  output_uniform->set_binding(1);
+  output_uniform->add_id(output_texture);
+
+  //put uniforms in Godot arrays
+  Array uniforms;
+  uniforms.append(input_uniform);
+  uniforms.append(output_uniform);
+
+  //uniform set
+  return rd->uniform_set_create(uniforms, shader, 0);
+}
+
+void SandGrid::run_gpu_step(){
+  //gpu not ready
+  if (rd == nullptr || !pipeline.is_valid()){
+    return;
+  }
+
+  frame_counter++;
+
+  if (frame_counter < frames_per_update){
+    return;
+  }
+
+  frame_counter = 0;
+
+  //actual texture
+  int input_idx = current_texture_index;
+  //next texture
+  int output_idx = 1 - current_texture_index; //if input_idx = 1 --> output_id = 0
+
+  //GPU command list 
+  int64_t compute_list = rd->compute_list_begin();
+  rd->compute_list_bind_compute_pipeline(compute_list, pipeline);
+  rd->compute_list_bind_uniform_set(compute_list, uniform_sets[input_idx], 0);
+
+  
+  int groups_x = (width + 15) / 16;
+  int groups_y = (height + 15) / 16;
+
+  rd->compute_list_dispatch(compute_list, groups_x, groups_y, 1);
+
+  rd->compute_list_end();
+
+  current_texture_index = output_idx;
+
+  update_display_texture();
+}
+
+void SandGrid::update_display_texture() {
+  //texture gpu -> texture2DRD -> sprite2D
+  Ref<Texture2DRD> tex;
+  tex.instantiate();
+
+  tex->set_texture_rd_rid(gpu_textures[current_texture_index]);
+
+  set_texture(tex);
 }
