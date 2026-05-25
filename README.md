@@ -15,6 +15,31 @@ To compile: scons platform=linux target=template_debug -j$(nproc)
 To run directly the game : godot4 .
 To open the editor : godot4 --editor
 
+## Benchmark
+
+```bash
+# will run presets contained in benchmark.gd
+godot --rendering-driver vulkan --script benchmark.gd
+```
+
+Example output on asus a14 (24core amd hx370 cpu + RTX 4060):
+```bash
+Godot Engine v4.6.2.stable.arch_linux.001aa128b (2026-03-31 20:42:38 UTC) - https://godotengine.org
+Vulkan 1.4.329 - Forward+ - Using Device #0: NVIDIA - NVIDIA GeForce RTX 4060 Laptop GPU
+
+=== Falling-sand benchmark youpii ===
+[benchmark] cpu_sequential 128x128 fill=0.5 steps=100 -> 1.710719 ms (0.01710719 ms/step, 957.725962007787 Mcells/s)
+[benchmark] cpu_sequential 256x256 fill=0.5 steps=100 -> 13.948705 ms (0.13948705 ms/step, 469.835730270301 Mcells/s)
+[benchmark] cpu_sequential 512x512 fill=0.5 steps=100 -> 91.281256 ms (0.91281256 ms/step, 287.182726758273 Mcells/s)
+[benchmark] cpu_sequential 1024x1024 fill=0.5 steps=100 -> 555.807178 ms (5.55807178 ms/step, 188.65823283772 Mcells/s)
+[benchmark] cpu_sequential 2048x2048 fill=0.5 steps=100 -> 1859.720527 ms (18.59720527 ms/step, 225.534102522707 Mcells/s)
+[benchmark] gpu 128x128 fill=0.5 steps=100 -> 2.915657 ms (0.02915657 ms/step, 561.931667545256 Mcells/s)
+[benchmark] gpu 256x256 fill=0.5 steps=100 -> 3.283526 ms (0.03283526 ms/step, 1995.9031845644 Mcells/s)
+[benchmark] gpu 512x512 fill=0.5 steps=100 -> 6.031883 ms (0.06031883 ms/step, 4345.97289105243 Mcells/s)
+[benchmark] gpu 1024x1024 fill=0.5 steps=100 -> 14.481846 ms (0.14481846 ms/step, 7240.62388178965 Mcells/s)
+[benchmark] gpu 2048x2048 fill=0.5 steps=100 -> 59.560318 ms (0.59560318 ms/step, 7042.11149443494 Mcells/s)
+```
+
 ## Understand Godot structure
 
 - .godot/
@@ -57,4 +82,3 @@ GPU reads texture A and writes on texture B
 Then, we exchange (texture B becomes actual grid)
 
 So we do : input_grid -> shader GPU -> output grid
-

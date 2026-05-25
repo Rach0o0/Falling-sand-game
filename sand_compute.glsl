@@ -20,16 +20,23 @@ output_grid = next statue --> binding(1)
 layout(set = 0, binding = 1, rgba32f) uniform writeonly image2D output_grid;
 
 /*
-cell types 
+dynamic grid size sent from cpp (GpuBackend::step)
+push constant = small block of data given directly to the shader no buffer needed
++ that is not a vector/matrix, just a number, push cte faster for this
+  https://docs.godotengine.org/en/stable/tutorials/rendering/compositor.html#compositor-effects
+  https://www.khronos.org/opengl/wiki/Layout_Qualifier_(GLSL)
+  https://vkguide.dev/docs/chapter-3/push_constants/#:~:text=Push%20constants%20let%20us%20send,in%20the%20command%20buffer%20itself.
+*/
+layout(push_constant, std430) uniform Params {
+    int width;
+    int height;
+} params;
+
+/*
+cell types
 */
 const int EMPTY = 0;
 const int SAND = 1;
-
-/*
-grid size (match with c++ values)
-*/
-const int WIDTH = 256;
-const int HEIGHT = 256;
 
 const int INVALID = -100000;
 
@@ -38,7 +45,7 @@ const int INVALID = -100000;
 check if coordinates are inside the grid
 */
 bool in_grid(ivec2 p){
-    return p.x >= 0 && p.y >= 0 && p.x < WIDTH && p.y < HEIGHT;
+    return p.x >= 0 && p.y >= 0 && p.x < params.width && p.y < params.height;
 }
 
 /*

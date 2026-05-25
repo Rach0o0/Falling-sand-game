@@ -3,12 +3,12 @@
 importer="glsl"
 type="RDShaderFile"
 uid="uid://bk7hq1yiv8wkl"
-path="res://.godot/imported/variance.glsl-29f0e3fbda95fb17fd15ec968ae998d5.res"
+path="res://.godot/imported/variance.glsl-cc8423e2c70e739a7724af1ae7610c57.res"
 
 [deps]
 
-source_file="res://variance.glsl"
-dest_files=["res://.godot/imported/variance.glsl-29f0e3fbda95fb17fd15ec968ae998d5.res"]
+source_file="res://example_sum_variance/variance.glsl"
+dest_files=["res://.godot/imported/variance.glsl-cc8423e2c70e739a7724af1ae7610c57.res"]
 
 [params]
 
