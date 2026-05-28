@@ -23,7 +23,7 @@ public:
   // concurrency implementation/algorithm enum to switch without recompiling
   enum Method {
     CPU_SEQUENTIAL = 0,
-    CPU_PARALLEL = 1, // TODO: next for now just sequential...
+    CPU_PARALLEL = 1, // push w/atomic CAS
     GPU = 2,
   };
 
@@ -58,8 +58,8 @@ protected:
   static void _bind_methods();
 
 private:
-  int width = 256;
-  int height = 256;
+  int width = 128;
+  int height = 64;
   Method method = GPU;
 
   /* ---------------------------------------------------------
@@ -94,6 +94,7 @@ private:
   void randomize();
   static std::unique_ptr<SimBackend> make_backend(Method m);
   static void fill_random(std::vector<uint8_t> &out, int w, int h, double fill, int seed);
+  void fill_test(std::vector<uint8_t> &out, int w, int h, double fill, int seed);
 
   /* ---------------------------------------------------------
   UTILS
@@ -104,6 +105,6 @@ private:
   inline int idx(int x, int y) const { return y * width + x; }
 };
 
-}
+} // namespace godot
 
 VARIANT_ENUM_CAST(godot::SandGrid::Method);

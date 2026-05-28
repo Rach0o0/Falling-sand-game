@@ -3,4 +3,4 @@
 [node name="Main" type="Node" unique_id=1172159680]
 
 [node name="SandGrid" type="SandGrid" parent="." unique_id=2067348181]
-method = 0
+method = 1

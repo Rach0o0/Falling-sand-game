@@ -1,7 +1,9 @@
 #include "sand_grid.h"
 
 #include "cpu_sequential_backend.h"
+#include "cpu_parallel_backend.h"
 #include "gpu_backend.h"
+#include "sim_backend.h"
 
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/core/class_db.hpp>
@@ -83,8 +85,21 @@ void SandGrid::fill_random(std::vector<uint8_t> &out, int w, int h, double fill,
   }
 }
 
+void SandGrid::fill_test(std::vector<uint8_t> &out, int w, int h, double fill, int seed) {
+  out.assign(static_cast<size_t>(w) * h, EMPTY);
+
+  int xmid = w / 2;
+  for (int y = 0; y < h; y++) {
+    out[y * w + xmid] = SAND;
+    out[y * w + xmid+1] = SAND;
+    out[y * w + xmid-1] = SAND;
+  }
+}
+
+
 void SandGrid::randomize() {
-  fill_random(cells, width, height, 0.10, 0);
+  // fill_random(cells, width, height, 0.10, 0);
+  fill_test(cells, width, height, 0.50, 0);
 }
 
 std::unique_ptr<SimBackend> SandGrid::make_backend(Method m) {
@@ -92,8 +107,8 @@ std::unique_ptr<SimBackend> SandGrid::make_backend(Method m) {
     case GPU:
       return std::make_unique<GpuBackend>();
     case CPU_PARALLEL:
-      UtilityFunctions::print("[SandGrid] CPU_PARALLEL not implemented yet!!!!!!!!!!!!");
-      return std::make_unique<CpuSequentialBackend>();
+      // 0 -> use all cores
+      return std::make_unique<CpuParallelBackend>(0);
     case CPU_SEQUENTIAL:
     default:
       return std::make_unique<CpuSequentialBackend>();
@@ -114,7 +129,8 @@ void SandGrid::_ready() {
 
   //set up the grid
   randomize();
-  set_scale(Vector2(3.0, 3.0));
+  set_scale(Vector2(6.0, 6.0));
+  set_centered(false);
 
   simulation_finished = false;
   simulation_steps = 0;
@@ -224,5 +240,21 @@ double SandGrid::run_benchmark(int p_method, int w, int h, double fill, int seed
   double ms = std::chrono::duration<double, std::milli>(end - start).count();
   double cells_per_s = (steps > 0 && ms > 0.0) ? (double)w * h * steps / (ms / 1000.0) : 0.0;
   UtilityFunctions::print("[benchmark] ", b->name(), " ", w, "x", h, " fill=", fill, " steps=", steps, " -> ", ms, " ms (", ms / steps, " ms/step, ", cells_per_s / 1e6, " Mcells/s)");
+
+  // correctness verification based on number of cells
+  std::vector<uint8_t> final_cells;
+  b->read_back(final_cells);
+  long n_particles_start = 0;
+  long n_particles_end = 0;
+  //TODO: change this if we add other particles that can disappear
+  for (uint8_t c : initial) n_particles_start += (c != EMPTY);
+  for (uint8_t c : final_cells) n_particles_end += (c !=EMPTY);
+
+  if (n_particles_start != n_particles_end) {
+    UtilityFunctions::print("[benchmark] INCORRECT loss of particles: ", n_particles_start, " -> ", n_particles_end, " grains");
+  } else {
+      UtilityFunctions::print("[benchmark] CORRECT conservation of particles: ", n_particles_start, " -> ", n_particles_end, " grains");
+  }
+
   return ms;
 }
