@@ -25,6 +25,7 @@ public:
     CPU_SEQUENTIAL = 0,
     CPU_PARALLEL = 1, // push w/atomic CAS
     GPU = 2,
+    CPU_PARALLEL_COLUMN_BAND = 3, // in-place sweep, columns split across threads
   };
 
   /* ---------------------------------------------------------
@@ -60,7 +61,7 @@ protected:
 private:
   int width = 128;
   int height = 64;
-  Method method = GPU;
+  Method method = CPU_PARALLEL_COLUMN_BAND;
 
   /* ---------------------------------------------------------
   CPU

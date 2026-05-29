@@ -2,6 +2,7 @@
 
 #include "cpu_sequential_backend.h"
 #include "cpu_parallel_backend.h"
+#include "cpu_parallel_columnband_backend.h"
 #include "gpu_backend.h"
 #include "sim_backend.h"
 
@@ -13,6 +14,7 @@
 #include <chrono>
 #include <random>
 
+#include <thread>
 using namespace godot;
 
 SandGrid::SandGrid() {}
@@ -34,7 +36,7 @@ void SandGrid::_bind_methods() {
   ClassDB::bind_method(D_METHOD("set_method", "m"), &SandGrid::set_method);
   ClassDB::bind_method(D_METHOD("get_method"), &SandGrid::get_method);
   ADD_PROPERTY(PropertyInfo(Variant::INT, "method", PROPERTY_HINT_ENUM,
-                            "CPU Sequential,CPU Parallel,GPU"),
+                            "CPU Sequential,CPU Parallel,GPU,CPU Parallel ColumnBand"),
                "set_method", "get_method");
 
   ClassDB::bind_method(
@@ -44,6 +46,7 @@ void SandGrid::_bind_methods() {
   BIND_ENUM_CONSTANT(CPU_SEQUENTIAL);
   BIND_ENUM_CONSTANT(CPU_PARALLEL);
   BIND_ENUM_CONSTANT(GPU);
+  BIND_ENUM_CONSTANT(CPU_PARALLEL_COLUMN_BAND);
 }
 
 void SandGrid::set_grid_width(int p_w) {
@@ -93,6 +96,8 @@ void SandGrid::fill_test(std::vector<uint8_t> &out, int w, int h, double fill, i
     out[y * w + xmid] = SAND;
     out[y * w + xmid+1] = SAND;
     out[y * w + xmid-1] = SAND;
+    // out[y * w + xmid-3] = SAND;
+    // out[y * w + xmid+3] = SAND;
   }
 }
 
@@ -109,6 +114,9 @@ std::unique_ptr<SimBackend> SandGrid::make_backend(Method m) {
     case CPU_PARALLEL:
       // 0 -> use all cores
       return std::make_unique<CpuParallelBackend>(0);
+    case CPU_PARALLEL_COLUMN_BAND:
+      // 0 -> use all cores
+      return std::make_unique<CpuParallelBackendColumnBand>(0);
     case CPU_SEQUENTIAL:
     default:
       return std::make_unique<CpuSequentialBackend>();
@@ -129,7 +137,7 @@ void SandGrid::_ready() {
 
   //set up the grid
   randomize();
-  set_scale(Vector2(6.0, 6.0));
+  set_scale(Vector2(10.0, 10.0));
   set_centered(false);
 
   simulation_finished = false;
@@ -169,6 +177,8 @@ void SandGrid::_process(double delta) {
 
   bool moved = backend->step();
   simulation_steps++;
+  // //artificially slow down simulation in non-benchmark mode to see what happens
+  // std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
   if (use_display_texture) {
     // GPU sends the computed texture, render it directly
@@ -223,7 +233,8 @@ double SandGrid::run_benchmark(int p_method, int w, int h, double fill, int seed
   }
 
   std::vector<uint8_t> initial;
-  fill_random(initial, w, h, fill, seed);
+  // fill_random(initial, w, h, fill, seed);
+  fill_test(initial, w, h, fill, seed);
   b->load(initial);
 
   // warmup caches & compilation stuff outside the timed block
