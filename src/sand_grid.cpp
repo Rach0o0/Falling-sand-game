@@ -7,9 +7,12 @@
 #include "sim_backend.h"
 
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/input_event_key.hpp>
+#include <godot_cpp/classes/window.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/variant/vector2.hpp>
+#include <godot_cpp/variant/vector2i.hpp>
 
 #include <chrono>
 #include <random>
@@ -135,10 +138,21 @@ void SandGrid::_ready() {
   //create CPU grid
   resize_grid();
 
-  //set up the grid
-  randomize();
   set_scale(Vector2(10.0, 10.0));
   set_centered(false);
+  fit_window_to_grid(); //make the whole scaled grid visible
+
+  //fill the grid and (re)build the backend for the current method
+  start_simulation();
+
+  UtilityFunctions::print("[SandGrid] controls: p = pause, m = switch method, s = slow mode");
+}
+
+//build the backend for the current method and reload a fresh grid
+//also used when switching method at runtime "m"
+void SandGrid::start_simulation() {
+  //set up the grid (deterministic, so every method starts from the same state)
+  randomize();
 
   simulation_finished = false;
   simulation_steps = 0;
@@ -160,7 +174,19 @@ void SandGrid::_ready() {
   if (use_display_texture) {
     set_texture(disp);
   } else {
+    // switching back from GPU left the sprite pointing at the GPU texture,
+    // so we needed to rebind our CPU ImageTexture before refreshing it
+    set_texture(texture);
     upload_to_texture();
+  }
+}
+
+// resize the OS window so the whole grid fits
+void SandGrid::fit_window_to_grid() {
+  Vector2 s = get_scale();//need this cuz we used set_scale
+  Vector2i win_size((int)(width * s.x), (int)(height * s.y));
+  if (Window *w = get_window()) {
+    w->set_size(win_size);
   }
 }
 
@@ -174,11 +200,16 @@ void SandGrid::_process(double delta) {
   if (simulation_finished || backend == nullptr) {
     return;
   }
+  if (paused) {
+    return; //"p": stay on the current frame
+  }
 
   bool moved = backend->step();
   simulation_steps++;
-  // //artificially slow down simulation in non-benchmark mode to see what happens
-  // std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  //"s": artificially slow down so we can watch the simulation evolve
+  if (slow_mode) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
 
   if (use_display_texture) {
     // GPU sends the computed texture, render it directly
@@ -196,6 +227,37 @@ void SandGrid::_process(double delta) {
     double time = std::chrono::duration<double, std::milli>(end_time - simulation_start_time).count();
     UtilityFunctions::print("Simulation ended after ", simulation_steps, " steps in ", time, " ms.");
     simulation_finished = true;
+  }
+}
+
+// keyboard controls for the main game
+void SandGrid::_input(const Ref<InputEvent> &event) {
+  if (Engine::get_singleton()->is_editor_hint()) {
+    return;//ignore in editor
+  }
+
+  Ref<InputEventKey> key = event;
+  // only react on the initial key press
+  if (key.is_null() || !key->is_pressed() || key->is_echo()) {
+    return;
+  }
+
+  switch (key->get_keycode()) {
+    case KEY_P:
+      paused = !paused;
+      UtilityFunctions::print("[SandGrid] ", paused ? "paused" : "resumed");
+      break;
+    case KEY_S:
+      slow_mode = !slow_mode;
+      UtilityFunctions::print("[SandGrid] slow mode ", slow_mode ? "ON" : "OFF");
+      break;
+    case KEY_M:
+      // cycle to the next method and restart from the same initial grid
+      method = (Method)(((int)method + 1) % 4);
+      start_simulation();
+      break;
+    default:
+      break;
   }
 }
 

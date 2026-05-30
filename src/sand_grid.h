@@ -2,6 +2,7 @@
 
 #include <godot_cpp/classes/image.hpp>
 #include <godot_cpp/classes/image_texture.hpp>
+#include <godot_cpp/classes/input_event.hpp>
 #include <godot_cpp/classes/sprite2d.hpp>
 #include <godot_cpp/variant/packed_byte_array.hpp>
 #include <godot_cpp/core/binder_common.hpp>
@@ -39,6 +40,7 @@ public:
   ---------------------------------------------------------- */
   void _ready() override; //called when node is ready in the scene
   void _process(double delta) override; //called each frame
+  void _input(const Ref<InputEvent> &event) override; //keyboard controls (p/m/s)
 
   /* ---------------------------------------------------------
   SETTINGS
@@ -87,6 +89,20 @@ private:
   bool simulation_finished = false;
   std::chrono::high_resolution_clock::time_point simulation_start_time;
   int simulation_steps = 0;
+
+  /* ---------------------------------------------------------
+  INTERACTIVE CONTROLS // NICE THINGIES TO HAVE (_input function)
+  ---------------------------------------------------------- */
+  //very helpful:
+  //https://docs.godotengine.org/en/stable/classes/class_inputeventkey.html
+  //https://godotforums.org/d/32909-input-handling-in-godot-40-using-gdextension/2
+  //https://docs.godotengine.org/en/stable/tutorials/inputs/inputevent.html
+  bool paused = false;    // "p": freeze on the current frame
+  bool slow_mode = false; // "s": sleep between steps to slowdown
+  // (re)build the backend for the current method and reload a fresh grid
+  void start_simulation();
+  // size the window so the whole scaled grid is visible
+  void fit_window_to_grid();
 
   /* ---------------------------------------------------------
   GRID SETUP
