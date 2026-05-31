@@ -231,8 +231,8 @@ bool GpuMargolusBackend::step() {
   push.resize(16);
   push.encode_s32(0, width);
   push.encode_s32(4, height);
-  push.encode_s32(8, 0);
-  push.encode_s32(12, 0);
+  push.encode_s32(8, phase);
+  push.encode_s32(12, step_count);
 
   //Margolus
   //number of blocks to be treated
