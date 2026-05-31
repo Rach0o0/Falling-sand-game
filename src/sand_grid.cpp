@@ -5,6 +5,7 @@
 #include "cpu_parallel_columnband_backend.h"
 #include "gpu_backend.h"
 #include "sim_backend.h"
+#include "gpu_margolus_backend.h"
 
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/input_event_key.hpp>
@@ -39,7 +40,7 @@ void SandGrid::_bind_methods() {
   ClassDB::bind_method(D_METHOD("set_method", "m"), &SandGrid::set_method);
   ClassDB::bind_method(D_METHOD("get_method"), &SandGrid::get_method);
   ADD_PROPERTY(PropertyInfo(Variant::INT, "method", PROPERTY_HINT_ENUM,
-                            "CPU Sequential,CPU Parallel,GPU,CPU Parallel ColumnBand"),
+                            "CPU Sequential,CPU Parallel,GPU,CPU Parallel ColumnBand, GPU Margolus"),
                "set_method", "get_method");
 
   ClassDB::bind_method(
@@ -50,6 +51,7 @@ void SandGrid::_bind_methods() {
   BIND_ENUM_CONSTANT(CPU_PARALLEL);
   BIND_ENUM_CONSTANT(GPU);
   BIND_ENUM_CONSTANT(CPU_PARALLEL_COLUMN_BAND);
+  BIND_ENUM_CONSTANT(GPU_MARGOLUS);
 }
 
 void SandGrid::set_grid_width(int p_w) {
@@ -120,7 +122,9 @@ std::unique_ptr<SimBackend> SandGrid::make_backend(Method m) {
     case CPU_PARALLEL_COLUMN_BAND:
       // 0 -> use all cores
       return std::make_unique<CpuParallelBackendColumnBand>(0);
-    case CPU_SEQUENTIAL:
+    case GPU_MARGOLUS: 
+      return std::make_unique<GpuMargolusBackend>();
+      case CPU_SEQUENTIAL:
     default:
       return std::make_unique<CpuSequentialBackend>();
   }
@@ -253,7 +257,7 @@ void SandGrid::_input(const Ref<InputEvent> &event) {
       break;
     case KEY_M:
       // cycle to the next method and restart from the same initial grid
-      method = (Method)(((int)method + 1) % 4);
+      method = (Method)(((int)method + 1) % 5);
       start_simulation();
       break;
     default:
@@ -286,7 +290,9 @@ double SandGrid::run_benchmark(int p_method, int w, int h, double fill, int seed
   std::unique_ptr<SimBackend> b;
   if ((Method)p_method == GPU) {
     b = std::make_unique<GpuBackend>(true);
-  } else {
+  } else if ((Method)p_method == GPU_MARGOLUS){
+    b = std::make_unique<GpuMargolusBackend>(true);
+  }else {
     b = make_backend((Method)p_method);
   }
   if (!b->setup(w, h)) {
