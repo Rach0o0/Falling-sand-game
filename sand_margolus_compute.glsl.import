@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://drj0dh76fc52s"
+path="res://.godot/imported/sand_margolus_compute.glsl-5810dc745311d0914611e79d6bb4ac7a.res"
+
+[deps]
+
+source_file="res://sand_margolus_compute.glsl"
+dest_files=["res://.godot/imported/sand_margolus_compute.glsl-5810dc745311d0914611e79d6bb4ac7a.res"]
+
+[params]
+

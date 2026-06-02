@@ -111,7 +111,12 @@ void GpuMargolusBackend::initialize_gpu_texture(RID texture_rid, const std::vect
       data[p + 1] = 0.85f;  // G
       data[p + 2] = 0.15f;  // B
       data[p + 3] = 1.0f;   // A
-    } else {
+    } else if (cells[i] == WOOD) {
+      data[p + 0] = 0.45f;
+      data[p + 1] = 0.25f;
+      data[p + 2] = 0.10f;
+      data[p + 3] = 1.0f;
+    }else {
       data[p + 0] = 0.0f;   // R
       data[p + 1] = 0.0f;   // G
       data[p + 2] = 0.0f;   // B
@@ -287,7 +292,16 @@ void GpuMargolusBackend::read_back(std::vector<uint8_t> &out) {
   PackedByteArray bytes = rd->texture_get_data(gpu_textures[current_texture_index], 0);
   PackedFloat32Array floats = bytes.to_float32_array();
   for (int i = 0; i < width * height; ++i) {
-    out[i] = (floats[i * 4] > 0.5f) ? SAND : EMPTY;
+    float r = floats[i * 4 + 0];
+    float g = floats[i * 4 + 1];
+
+    if (r > 0.8f && g > 0.7f) {
+      out[i] = SAND;
+    } else if (r > 0.3f) {
+      out[i] = WOOD;
+    } else {
+      out[i] = EMPTY;
+    }
   }
 }
 

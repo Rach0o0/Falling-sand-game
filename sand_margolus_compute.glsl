@@ -47,7 +47,7 @@ cell types
 
 const int EMPTY = 0;
 const int SAND = 1;
-const int WALL = 2;
+const int WOOD = 2;
 
 /* 
 grid access
@@ -62,16 +62,17 @@ outside cells -> walls
 */
 int get_cell(ivec2 p){
     if (!in_grid(p)){
-        return WALL;
+        return WOOD;
     }
 
     vec4 color = imageLoad(input_grid, p);
 
-    /*
-    red > 0.5
-    */
-    if (color.r > 0.5) {
+    if (color.r > 0.8 && color.g > 0.7) {
         return SAND;
+    }
+
+    if (color.r > 0.3 && color.g < 0.5) {
+        return WOOD;
     }
 
     return EMPTY;
@@ -88,6 +89,8 @@ void set_cell(ivec2 p, int cell) {
     }
     if (cell == SAND) {
         imageStore(output_grid, p, vec4(1.0, 0.85, 0.15, 1.0));
+    } else if (cell == WOOD) {
+        imageStore(output_grid, p, vec4(0.45, 0.25, 0.10, 1.0));
     } else {
         imageStore(output_grid, p, vec4(0.0, 0.0, 0.0, 1.0));
     }

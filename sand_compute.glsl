@@ -37,6 +37,7 @@ cell types
 */
 const int EMPTY = 0;
 const int SAND = 1;
+const int WOOD = 2;
 
 const int INVALID = -100000;
 
@@ -61,8 +62,12 @@ int get_cell(ivec2 p){
 
     vec4 color = imageLoad(input_grid, p);
 
-    if (color.r > 0.5) {
+    if (color.r > 0.8 && color.g > 0.7) {
         return SAND;
+    }
+
+    if (color.r > 0.3 && color.g < 0.5) {
+        return WOOD;
     }
 
     return EMPTY;
@@ -74,7 +79,10 @@ write one cell into output texture
 void set_cell(ivec2 p, int cell) {
     if (cell == SAND) {
         imageStore(output_grid, p, vec4(1.0, 0.85, 0.15, 1.0));
-    } else {
+    } else if (cell == WOOD){
+        imageStore(output_grid, p, vec4(0.45, 0.25, 0.10, 1.0));
+    }
+    else {
         imageStore(output_grid, p, vec4(0.0, 0.0, 0.0, 1.0));
     }
 }
@@ -100,6 +108,9 @@ bool random_bool(ivec2 p) {
     uint h = hash_uvec2(uvec2(p));
     return (h & 1u) == 0u;
 }
+
+
+
 
 /*
 find where the sand particle at position s wants to go
@@ -268,6 +279,10 @@ void main(){
         } else {
             next = SAND;
         }
+    }
+
+    else if (current == WOOD) {
+        next = WOOD;
     }
     set_cell(coord, next);
 }

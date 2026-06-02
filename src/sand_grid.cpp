@@ -106,10 +106,33 @@ void SandGrid::fill_test(std::vector<uint8_t> &out, int w, int h, double fill, i
   }
 }
 
+void SandGrid::fill_wood_hole_test(std::vector<uint8_t> &out, int w, int h){
+  out.assign(static_cast<size_t>(w) * h, EMPTY);
+
+  int wall_y = h/2;
+  int hole_x = w/2;
+  int hole_radius = 2;
+
+  for (int y = 5; y < wall_y - 5; y++){
+    for (int x = w /2-20; x<= w/2+20 ; x++){
+      if (x >= 0 && x < w){
+        out[y*w+x] = SAND;
+      }
+    }
+  }
+
+  for (int x = 0; x < w ; x++){
+    if (x <hole_x - hole_radius ||x > hole_x + hole_radius){
+      out[wall_y * w + x] = WOOD;
+      out[(wall_y + 1) * w + x ] = WOOD;
+    }
+  }
+}
+
 
 void SandGrid::randomize() {
   // fill_random(cells, width, height, 0.10, 0);
-  fill_test(cells, width, height, 0.50, 0);
+  fill_wood_hole_test(cells, width, height);
 }
 
 std::unique_ptr<SimBackend> SandGrid::make_backend(Method m) {
@@ -272,12 +295,23 @@ void SandGrid::_input(const Ref<InputEvent> &event) {
 void SandGrid::upload_to_texture() {
   uint8_t *dst = pixel_buffer.ptrw();
   for (int i = 0; i < width * height; ++i) {
-    uint8_t v = (cells[i] == SAND) ? 220 : 20;
-    dst[i * 4 + 0] = v;
-    dst[i * 4 + 1] = v;
-    dst[i * 4 + 2] = (cells[i] == SAND) ? 160 : 20;
+    if (cells[i] == SAND) {
+      dst[i * 4 + 0] = 220;
+      dst[i * 4 + 1] = 220;
+      dst[i * 4 + 2] = 160;
+    } else if (cells[i] == WOOD) {
+      dst[i * 4 + 0] = 120;
+      dst[i * 4 + 1] = 70;
+      dst[i * 4 + 2] = 30;
+    } else {
+      dst[i * 4 + 0] = 20;
+      dst[i * 4 + 1] = 20;
+      dst[i * 4 + 2] = 20;
+    }
+
     dst[i * 4 + 3] = 255;
   }
+
   image->set_data(width, height, false, Image::FORMAT_RGBA8, pixel_buffer);
   texture->update(image);
 }

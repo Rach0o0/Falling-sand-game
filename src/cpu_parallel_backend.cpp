@@ -131,7 +131,13 @@ bool CpuParallelBackend::step() {
 
   // 1 => clear next
   for (size_t i = 0; i < n; ++i) {
-    next[i].store(EMPTY, std::memory_order_relaxed);
+    uint8_t c = cur[i].load(std::memory_order_relaxed);
+
+    if (c == WOOD) {
+      next[i].store(WOOD, std::memory_order_relaxed);
+    } else {
+      next[i].store(EMPTY, std::memory_order_relaxed);
+    }
   }
 
   std::atomic<bool> moved{false};

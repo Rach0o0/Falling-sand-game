@@ -113,6 +113,7 @@ private:
   static std::unique_ptr<SimBackend> make_backend(Method m);
   static void fill_random(std::vector<uint8_t> &out, int w, int h, double fill, int seed);
   void fill_test(std::vector<uint8_t> &out, int w, int h, double fill, int seed);
+  void fill_wood_hole_test(std::vector<uint8_t> &out, int w, int h);
 
   /* ---------------------------------------------------------
   UTILS

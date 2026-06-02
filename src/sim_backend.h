@@ -15,6 +15,7 @@ CELL TYPES
 enum Cell : uint8_t {
   EMPTY = 0,
   SAND = 1,
+  WOOD = 2,
   //wall, water, ...
 };
 
