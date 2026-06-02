@@ -96,6 +96,7 @@ bool same_pos(ivec2 a, ivec2 b){
 
 /*
 choose left or right
+TODO: based on https://github.com/Angelo1211/2021-Shaders/blob/master/hashes.glsl
 */
 uint hash_uvec2(uvec2 v) {
     v = v * 1664525u + 1013904223u;

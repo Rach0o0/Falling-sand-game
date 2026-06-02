@@ -26,8 +26,9 @@ public:
     CPU_SEQUENTIAL = 0,
     CPU_PARALLEL = 1, // push w/atomic CAS
     GPU = 2,
-    CPU_PARALLEL_COLUMN_BAND = 3, // in-place sweep, columns split across threads
+    CPU_PARALLEL_COLUMN_BAND = 3,
     GPU_MARGOLUS = 4,
+    CPU_MARGOLUS = 5,
   };
 
   /* ---------------------------------------------------------

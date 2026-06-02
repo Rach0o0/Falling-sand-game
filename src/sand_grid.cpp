@@ -3,6 +3,7 @@
 #include "cpu_sequential_backend.h"
 #include "cpu_parallel_backend.h"
 #include "cpu_parallel_columnband_backend.h"
+#include "cpu_margolus_backend.h"
 #include "gpu_backend.h"
 #include "sim_backend.h"
 #include "gpu_margolus_backend.h"
@@ -40,7 +41,7 @@ void SandGrid::_bind_methods() {
   ClassDB::bind_method(D_METHOD("set_method", "m"), &SandGrid::set_method);
   ClassDB::bind_method(D_METHOD("get_method"), &SandGrid::get_method);
   ADD_PROPERTY(PropertyInfo(Variant::INT, "method", PROPERTY_HINT_ENUM,
-                            "CPU Sequential,CPU Parallel,GPU,CPU Parallel ColumnBand, GPU Margolus"),
+                            "CPU Sequential,CPU Parallel,GPU,CPU Parallel ColumnBand, GPU Margolus,CPU Margolus"),
                "set_method", "get_method");
 
   ClassDB::bind_method(
@@ -52,6 +53,7 @@ void SandGrid::_bind_methods() {
   BIND_ENUM_CONSTANT(GPU);
   BIND_ENUM_CONSTANT(CPU_PARALLEL_COLUMN_BAND);
   BIND_ENUM_CONSTANT(GPU_MARGOLUS);
+  BIND_ENUM_CONSTANT(CPU_MARGOLUS);
 }
 
 void SandGrid::set_grid_width(int p_w) {
@@ -132,7 +134,10 @@ void SandGrid::fill_wood_hole_test(std::vector<uint8_t> &out, int w, int h){
 
 void SandGrid::randomize() {
   // fill_random(cells, width, height, 0.10, 0);
-  fill_wood_hole_test(cells, width, height);
+  fill_random(cells, width, height, 0.50, 0);
+  // fill_random(cells, width, height, 0.90, 0);
+  // fill_test(cells,width,height,0,0);
+  // fill_wood_hole_test(cells, width, height);
 }
 
 std::unique_ptr<SimBackend> SandGrid::make_backend(Method m) {
@@ -145,8 +150,11 @@ std::unique_ptr<SimBackend> SandGrid::make_backend(Method m) {
     case CPU_PARALLEL_COLUMN_BAND:
       // 0 -> use all cores
       return std::make_unique<CpuParallelBackendColumnBand>(0);
-    case GPU_MARGOLUS: 
+    case GPU_MARGOLUS:
       return std::make_unique<GpuMargolusBackend>();
+    case CPU_MARGOLUS:
+      // 0 -> use all cores
+      return std::make_unique<CpuMargolusBackend>(0);
       case CPU_SEQUENTIAL:
     default:
       return std::make_unique<CpuSequentialBackend>();
@@ -280,7 +288,7 @@ void SandGrid::_input(const Ref<InputEvent> &event) {
       break;
     case KEY_M:
       // cycle to the next method and restart from the same initial grid
-      method = (Method)(((int)method + 1) % 5);
+      method = (Method)(((int)method + 1) % 6);
       start_simulation();
       break;
     default:
@@ -352,7 +360,7 @@ double SandGrid::run_benchmark(int p_method, int w, int h, double fill, int seed
 
   double ms = std::chrono::duration<double, std::milli>(end - start).count();
   double cells_per_s = (steps > 0 && ms > 0.0) ? (double)w * h * steps / (ms / 1000.0) : 0.0;
-  UtilityFunctions::print("[benchmark] ", b->name(), " ", w, "x", h, " fill=", fill, " steps=", steps, " -> ", ms, " ms (", ms / steps, " ms/step, ", cells_per_s / 1e6, " Mcells/s)");
+  UtilityFunctions::printraw("[benchmark] ", b->name(), " ", w, "x", h, " fill=", fill, " steps=", steps, " -> ", ms, " ms (", ms / steps, " ms/step, ", cells_per_s / 1e6, " Mcells/s)");
 
   // correctness verification based on number of cells
   std::vector<uint8_t> final_cells;
@@ -364,9 +372,9 @@ double SandGrid::run_benchmark(int p_method, int w, int h, double fill, int seed
   for (uint8_t c : final_cells) n_particles_end += (c !=EMPTY);
 
   if (n_particles_start != n_particles_end) {
-    UtilityFunctions::print("[benchmark] INCORRECT loss of particles: ", n_particles_start, " -> ", n_particles_end, " grains");
+    UtilityFunctions::print(" || INCORRECT loss of particles: ", n_particles_start, " -> ", n_particles_end, " grains");
   } else {
-      UtilityFunctions::print("[benchmark] CORRECT conservation of particles: ", n_particles_start, " -> ", n_particles_end, " grains");
+      UtilityFunctions::print(" || CORRECT conservation of particles: ", n_particles_start, " -> ", n_particles_end, " grains");
   }
 
   return ms;

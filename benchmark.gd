@@ -8,11 +8,12 @@ const CPU_PARALLEL := 1
 const GPU := 2
 const CPU_PARALLEL_COLUMN_BAND:= 3
 const GPU_MARGOLUS := 4
+const CPU_MARGOLUS := 5
 
 func _init() -> void:
 	var grid := SandGrid.new()
-	var methods := [CPU_SEQUENTIAL, CPU_PARALLEL, CPU_PARALLEL_COLUMN_BAND, GPU, GPU_MARGOLUS]
-	var sizes := [128, 256, 512, 1024, 2048]
+	var methods := [CPU_SEQUENTIAL, CPU_PARALLEL, CPU_PARALLEL_COLUMN_BAND, GPU, GPU_MARGOLUS, CPU_MARGOLUS]
+	var sizes := [128, 256, 512, 1024, 2048, 3126]#, 10000]
 	var fill := 0.5
 	var seed := 42
 	var steps := 100
