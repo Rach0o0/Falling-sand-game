@@ -29,7 +29,8 @@ public:
   // concretely, it allows to submit/sync and get accurate timing (kind of like CUDA synchronize()) 
   // for the benchmark
   // when false, uses the "global" render device to display result
-  explicit GpuMargolusBackend(bool force_local = false) : force_local(force_local) {}
+  explicit GpuMargolusBackend(bool force_local = false, int wg_x = 16, int wg_y = 16)
+      : force_local(force_local), wg_x(wg_x), wg_y(wg_y) {}
 
   bool setup(int width, int height) override;
   void load(const std::vector<uint8_t> &cells) override;
@@ -52,6 +53,10 @@ private:
   int current_texture_index = 0;
   int width = 0;
   int height = 0;
+
+  //changed in glsl local_size_x y
+  int wg_x = 16;
+  int wg_y = 16;
 
   // Margolus parameters
   int phase = 0; //0 -> normal 2x2, 1 -> shifted 2x2

@@ -167,6 +167,10 @@ bool GpuMargolusBackend::create_compute_pipeline() {
     shader_code = cleaned;
   }
 
+  //hacky way of changing requested workgroup size!! FIXME later
+  shader_code = shader_code.replace("local_size_x = 16", "local_size_x = " + itos(wg_x));
+  shader_code = shader_code.replace("local_size_y = 16", "local_size_y = " + itos(wg_y));
+
   //create Godot shader source
   Ref<RDShaderSource> shader_source;
   shader_source.instantiate();
@@ -251,8 +255,9 @@ bool GpuMargolusBackend::step() {
     blocks_x = (width + 2)/2;
     blocks_y = (height+2)/2;
   }
-  int groups_x = (blocks_x + 15) /16;
-  int groups_y = (blocks_y + 15)/16;
+  // one thread per 2x2 block => assign workgroup size to blocks_x x blocks_y
+  int groups_x = (blocks_x + wg_x - 1) / wg_x;
+  int groups_y = (blocks_y + wg_y - 1) / wg_y;
 
 
   //GPU command list, like a recipe

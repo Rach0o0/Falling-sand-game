@@ -163,6 +163,10 @@ bool GpuBackend::create_compute_pipeline() {
     shader_code = cleaned;
   }
 
+  //hacky way of changing requested workgroup size!! FIXME later
+  shader_code = shader_code.replace("local_size_x = 16", "local_size_x = " + itos(wg_x));
+  shader_code = shader_code.replace("local_size_y = 16", "local_size_y = " + itos(wg_y));
+
   //create Godot shader source
   Ref<RDShaderSource> shader_source;
   shader_source.instantiate();
@@ -241,8 +245,9 @@ bool GpuBackend::step() {
   rd->compute_list_bind_uniform_set(compute_list, uniform_sets[input_idx], 0);
   rd->compute_list_set_push_constant(compute_list, push, push.size());
 
-  int groups_x = (width + 15) / 16;
-  int groups_y = (height + 15) / 16;
+  // one thread per cell, so cover width x height with the chosen workgroup size
+  int groups_x = (width + wg_x - 1) / wg_x;
+  int groups_y = (height + wg_y - 1) / wg_y;
   rd->compute_list_dispatch(compute_list, groups_x, groups_y, 1);
   rd->compute_list_end();
 

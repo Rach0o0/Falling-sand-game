@@ -5,6 +5,7 @@
 #include <godot_cpp/classes/input_event.hpp>
 #include <godot_cpp/classes/sprite2d.hpp>
 #include <godot_cpp/variant/packed_byte_array.hpp>
+#include <godot_cpp/variant/dictionary.hpp>
 #include <godot_cpp/core/binder_common.hpp>
 
 #include <cstdint>
@@ -59,12 +60,19 @@ public:
   // print timing and returns ms spent in the main loop
   double run_benchmark(int p_method, int w, int h, double fill, int seed, int steps);
 
+  // full final benchmarks
+  // builds backend with thread count (CPU) or workgroup size (GPU)
+  // inits grid with chosen scenario, runs measurements and returns a dict to benchmark.gd
+  Dictionary run_benchmark_ex(int p_method, int w, int h, int scenario, int seed,
+                              int steps, int threads, int wg_x, int wg_y, int repeats);
+
 protected:
   static void _bind_methods();
 
 private:
-  int width = 128;
-  int height = 64;
+  int width = 256;
+  int height = 256;
+  float scale = 5.0;
   Method method = CPU_PARALLEL_COLUMN_BAND;
 
   /* ---------------------------------------------------------
@@ -115,6 +123,25 @@ private:
   static void fill_random(std::vector<uint8_t> &out, int w, int h, double fill, int seed);
   void fill_test(std::vector<uint8_t> &out, int w, int h, double fill, int seed);
   void fill_wood_hole_test(std::vector<uint8_t> &out, int w, int h);
+
+  /* ---------------------------------------------------------
+  BENCHMARK SCENARIOS
+  HAS TO MATCH benchmark.g
+  ---------------------------------------------------------- */
+  enum Scenario {
+    SCN_RANDOM_DENSE = 0,
+    SCN_CHECKERBOARD = 1,
+    SCN_FULL_UPPER_HALF = 2,
+    SCN_HOURGLASS = 3,
+    SCN_SINGLE_SOURCE = 4,
+  };
+  static void fill_checkerboard(std::vector<uint8_t> &out, int w, int h);
+  static void fill_full_upper_half(std::vector<uint8_t> &out, int w, int h);
+  static void fill_hourglass(std::vector<uint8_t> &out, int w, int h, int seed);
+  static void fill_single_source(std::vector<uint8_t> &out, int w, int h);
+  //selects right scenario fill above
+  static void fill_scenario(int scenario, std::vector<uint8_t> &out, int w, int h, double fill, int seed);
+  static const char *scenario_name(int scenario);
 
   /* ---------------------------------------------------------
   UTILS

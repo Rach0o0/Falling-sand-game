@@ -26,10 +26,11 @@ namespace godot {
 class GpuBackend : public SimBackend {
 public:
   // force_local is needed to have a "private local RenderingDevice"
-  // concretely, it allows to submit/sync and get accurate timing (kind of like CUDA synchronize()) 
+  // concretely, it allows to submit/sync and get accurate timing (kind of like CUDA synchronize())
   // for the benchmark
   // when false, uses the "global" render device to display result
-  explicit GpuBackend(bool force_local = false) : force_local(force_local) {}
+  explicit GpuBackend(bool force_local = false, int wg_x = 16, int wg_y = 16)
+      : force_local(force_local), wg_x(wg_x), wg_y(wg_y) {}
 
   bool setup(int width, int height) override;
   void load(const std::vector<uint8_t> &cells) override;
@@ -52,6 +53,10 @@ private:
   int current_texture_index = 0;
   int width = 0;
   int height = 0;
+
+  // one thread per 2x2 block => assign workgroup size to blocks_x x blocks_y
+  int wg_x = 16;
+  int wg_y = 16;
 
   //empty gpu texture creation
   RID create_gpu_texture();
