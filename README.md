@@ -3,6 +3,8 @@ by Ayoub Agouzoul & Rachid Tazi.
 
 A falling sand cellular automaton implemented as a Godot 4 GDExtension (C++), with several interchangeable concurrency backends (sequential, parallel CPU, GPU compute) that can be switched at runtime and benchmarked against each other.
 
+The Project report is available [here](Concurrent_Falling_Sand_Game_Final_Report_06_06___Rachid_Tazi___Ayoub_Agouzoul.pdf).
+
 ## Requirements
 
 - **Godot 4.6+** (the `godot` binary on your `PATH`)
