@@ -10,3 +10,4 @@ export_presets.cfg
 *.os
 *.dblite
 *.so
+report/**/main.*
